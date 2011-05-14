@@ -61,11 +61,13 @@ public class AbsoluteTimeDateFormat extends DateFormat {
   public
   AbsoluteTimeDateFormat() {
     setCalendar(Calendar.getInstance());
+    setNumberFormat( NumberFormat.getIntegerInstance() );  // DateFormat assumes this is non-null
   }
   
   public
   AbsoluteTimeDateFormat(TimeZone timeZone) {
     setCalendar(Calendar.getInstance(timeZone));
+    setNumberFormat( NumberFormat.getIntegerInstance() );  // DateFormat assumes this is non-null
   }
 
   private static long   previousTime;

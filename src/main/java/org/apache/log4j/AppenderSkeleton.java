@@ -242,8 +242,26 @@ public abstract class AppenderSkeleton implements Appender, OptionHandler {
       case Filter.NEUTRAL: f = f.getNext();
       }
     }
-    
-    this.append(event);    
+   
+    final PreFormattingLayout  preFormattingLayout = this.preFormattingLayout;
+    if ( preFormattingLayout != null )
+      preFormattingLayout.preFormat( event );
+    try
+    {
+      synchronized ( this )
+      {
+        if(closed) {
+          LogLog.error("Attempted to append to closed appender named ["+name+"].");
+          return;
+        }
+        this.append(event);
+      }
+    }
+    finally
+    {
+      if ( preFormattingLayout != null )
+        preFormattingLayout.clearPreFormat( event );
+    }
   }
 
   /** 
