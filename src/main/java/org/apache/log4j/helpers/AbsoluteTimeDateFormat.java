@@ -17,6 +17,7 @@
 
 package org.apache.log4j.helpers;
 
+import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.TimeZone;

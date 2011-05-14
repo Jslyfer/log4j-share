@@ -39,6 +39,7 @@ public abstract class AppenderSkeleton implements Appender, OptionHandler {
   /** The layout variable does not need to be set if the appender
       implementation has its own layout. */
   protected Layout layout;
+  private PreFormattingLayout preFormattingLayout;
 
   /** Appenders are named. */
   protected String name;
@@ -226,13 +227,7 @@ public abstract class AppenderSkeleton implements Appender, OptionHandler {
     * AppenderSkeleton#append} method.
     * */
   public
-  synchronized 
   void doAppend(LoggingEvent event) {
-    if(closed) {
-      LogLog.error("Attempted to append to closed appender named ["+name+"].");
-      return;
-    }
-    
     if(!isAsSevereAsThreshold(event.getLevel())) {
       return;
     }
@@ -275,6 +270,8 @@ public abstract class AppenderSkeleton implements Appender, OptionHandler {
   */
   public
   void setLayout(Layout layout) {
+    this.preFormattingLayout = ( ( layout instanceof PreFormattingLayout )
+                                     ? (PreFormattingLayout) layout : null );
     this.layout = layout;
   }
 

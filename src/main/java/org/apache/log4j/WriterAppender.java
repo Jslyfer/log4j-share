@@ -307,7 +307,8 @@ public class WriterAppender extends AppenderSkeleton {
      @since 0.9.0 */
   protected
   void subAppend(LoggingEvent event) {
-    this.qw.write(this.layout.format(event));
+    final Layout  layout = this.layout;  // copy to local variable so layout does not change herein
+    this.qw.write(layout.format(event));
 
     if(layout.ignoresThrowable()) {
       String[] s = event.getThrowableStrRep();

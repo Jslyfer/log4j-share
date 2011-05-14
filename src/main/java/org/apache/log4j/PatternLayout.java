@@ -396,7 +396,7 @@ import org.apache.log4j.helpers.PatternConverter;
 
 
    @since 0.8.2 */
-public class PatternLayout extends Layout {
+public class PatternLayout extends Layout implements PreFormattingLayout {
 
 
   /** Default pattern string for log output. Currently set to the
@@ -413,9 +413,7 @@ public class PatternLayout extends Layout {
   protected final int BUF_SIZE = 256;
   protected final int MAX_CAPACITY = 1024;
 
-
-  // output buffer appended to when format() is invoked
-  private StringBuffer sbuf = new StringBuffer(BUF_SIZE);
+  private final ThreadLocal<String>  preFormatData = new ThreadLocal<String>();  // assumes no re-entrancy between preFormat and clearPreFormat, which seems safe
 
   private String pattern;
 
@@ -444,7 +442,7 @@ public class PatternLayout extends Layout {
      controls formatting and consists of a mix of literal content and
      conversion specifiers.
    */
-  public
+  public synchronized  // needs to be synchronized to ensure pattern and head values correspond to one another
   void setConversionPattern(String conversionPattern) {
     pattern = conversionPattern;
     head = createPatternParser(conversionPattern).parse();
@@ -488,24 +486,36 @@ public class PatternLayout extends Layout {
     return new PatternParser(pattern);
   }
 
+  public void  preFormat( LoggingEvent loggingEvent )
+  {
+    preFormatData.set( internalFormat( loggingEvent ) );
+  }
 
   /**
      Produces a formatted string as specified by the conversion pattern.
   */
   public String format(LoggingEvent event) {
-    // Reset working stringbuffer
-    if(sbuf.capacity() > MAX_CAPACITY) {
-      sbuf = new StringBuffer(BUF_SIZE);
-    } else {
-      sbuf.setLength(0);
+    {
+      final String  preFormattedString = preFormatData.get();
+      if ( preFormattedString != null )
+        return ( preFormattedString );
     }
+    return ( internalFormat( event ) );
+  }
 
+  private String  internalFormat( LoggingEvent event )
+  {
+    final StringBuffer  sbuf = new StringBuffer( MAX_CAPACITY );
     PatternConverter c = head;
-
     while(c != null) {
       c.format(sbuf, event);
       c = c.next;
     }
     return sbuf.toString();
   }
+
+  public void  clearPreFormat( LoggingEvent loggingEvent )
+  {
+    preFormatData.remove();
+}
 }

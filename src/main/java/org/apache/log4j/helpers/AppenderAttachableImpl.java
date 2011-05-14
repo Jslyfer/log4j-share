@@ -53,20 +53,28 @@ public class AppenderAttachableImpl implements AppenderAttachable {
   }
 
   /**
-     Call the <code>doAppend</code> method on all attached appenders.  */
+     Call the <code>doAppend</code> method on all attached appenders.
+     Implementations should be thread safe against other methods on this class.
+   */
   public
   int appendLoopOnAppenders(LoggingEvent event) {
-    int size = 0;
-    Appender appender;
-
-    if(appenderList != null) {
-      size = appenderList.size();
-      for(int i = 0; i < size; i++) {
-	appender = (Appender) appenderList.elementAt(i);
-	appender.doAppend(event);
+    // copy into field, so null check and usage are against same value    
+    Vector  appenderList = this.appenderList;
+    if ( appenderList != null ) {
+      Appender  appenders[];
+      synchronized ( appenderList ) {
+        int size = appenderList.size();
+        if ( size == 0 )
+          return 0;
+        appenders = (Appender[]) appenderList.toArray( new Appender[size] );
       }
-    }    
+      int size = appenders.length;
+      for(int i = 0; i < size; i++) {
+        appenders[i].doAppend(event);
+      }
     return size;
+  }
+    return 0;
   }
 
 

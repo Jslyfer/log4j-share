@@ -36,7 +36,7 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.LoggerRepository;
 import org.apache.log4j.spi.HierarchyEventListener;
 import org.apache.log4j.helpers.NullEnumeration;
-import org.apache.log4j.helpers.AppenderAttachableImpl;
+import org.apache.log4j.helpers.AppenderAttachableImpl5;
 
 import java.util.Enumeration;
 import java.util.MissingResourceException;
@@ -123,7 +123,7 @@ public class Category implements AppenderAttachable {
   protected LoggerRepository repository;
 
 
-  AppenderAttachableImpl aai;
+  AppenderAttachableImpl5 aai;
 
   /** Additivity is set to true by default, that is children inherit
       the appenders of their ancestors by default. If this variable is
@@ -159,7 +159,7 @@ public class Category implements AppenderAttachable {
   public
   void addAppender(Appender newAppender) {
     if(aai == null) {
-      aai = new AppenderAttachableImpl();
+      aai = new AppenderAttachableImpl5();
     }
     aai.addAppender(newAppender);
     repository.fireAddAppenderEvent(this, newAppender);
@@ -200,16 +200,15 @@ public class Category implements AppenderAttachable {
     int writes = 0;
 
     for(Category c = this; c != null; c=c.parent) {
-      // Protected against simultaneous call to addAppender, removeAppender,...
-      synchronized(c) {
-	if(c.aai != null) {
-	  writes += c.aai.appendLoopOnAppenders(event);
+      // copy into field, so null check and usage are against same value
+      AppenderAttachableImpl5  cAai = c.aai;
+      if (cAai != null) {
+        writes += cAai.appendLoopOnAppenders(event);
 	}
-	if(!c.additive) {
+      if (!c.additive) {
 	  break;
 	}
       }
-    }
 
     if(writes == 0) {
       repository.emitNoAppenderWarning(this);

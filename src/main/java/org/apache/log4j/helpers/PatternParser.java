@@ -425,27 +425,55 @@ public class PatternParser {
     }
   }
 
-  private static class DatePatternConverter extends PatternConverter {
-    private DateFormat df;
-    private Date date;
+  private static final class  DatePatternConverter
+    extends PatternConverter
+  {
+    private final ThreadLocal<DateFormatAndDate>  dateFormatAndDate;
 
-    DatePatternConverter(FormattingInfo formattingInfo, DateFormat df) {
-      super(formattingInfo);
-      date = new Date();
-      this.df = df;
+    DatePatternConverter( final FormattingInfo formattingInfo, final DateFormat dateFormat )
+    {
+      super( formattingInfo );
+      final Date  date = new Date();
+      dateFormatAndDate = new ThreadLocal<DateFormatAndDate>()
+      {
+        @Override
+        final protected DateFormatAndDate  initialValue()
+        {
+          return ( new DateFormatAndDate( dateFormat, date ) );
+    }
+      };
     }
 
-    public
-    String convert(LoggingEvent event) {
-      date.setTime(event.timeStamp);
-      String converted = null;
-      try {
-        converted = df.format(date);
+    public String  convert( final LoggingEvent event )
+    {
+      return ( dateFormatAndDate.get().convert( event ) );
       }
-      catch (Exception ex) {
-        LogLog.error("Error occured while converting date.", ex);
+    
+    // keep separate format and date for each thread to avoid both thread safety issues and synchronization
+    private static final class  DateFormatAndDate
+    {
+      DateFormatAndDate( final DateFormat dateFormat, final Date date )
+      {
+        perThreadFormat = (DateFormat) dateFormat.clone();
+        perThreadDate = (Date) date.clone();
       }
-      return converted;
+      
+      String  convert( final LoggingEvent event )
+      {
+        perThreadDate.setTime( event.timeStamp );
+        try
+        {
+          return ( perThreadFormat.format( perThreadDate ) );
+    }
+        catch ( Exception e )
+        {
+          LogLog.error( "Error occured while converting date.", e );
+          return ( null );
+  }
+      }
+
+      private final DateFormat  perThreadFormat;
+      private final Date  perThreadDate;
     }
   }
 
